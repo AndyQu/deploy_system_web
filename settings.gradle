@@ -1,0 +1,2 @@
+rootProject.name = "deploy_system_web"
+include "deploy_system"
