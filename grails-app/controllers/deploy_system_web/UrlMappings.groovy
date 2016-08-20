@@ -8,6 +8,14 @@ class UrlMappings {
                 // apply constraints here
             }
         }
+		"/projects/${id}"{
+			controller="Main"
+			action="project"
+		}
+		"/projects"{
+			controller="Main"
+			action="index"
+		}
 
         "/"(view:"/index")
         "500"(view:'/error')

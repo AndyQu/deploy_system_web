@@ -30,7 +30,10 @@ ext {
 
 repositories {
     mavenLocal()
-    maven { url "https://repo.grails.org/grails/core" }
+//	maven {url "http://maven.sankuai.com/nexus/content/repositories/releases/"}
+//	maven {url "http://maven.oschina.net/content/groups/public"}
+	maven { url "https://repo.grails.org/grails/core" }
+	mavenCentral()
 }
 
 dependencyManagement {
@@ -62,6 +65,10 @@ dependencies {
     testCompile "org.grails.plugins:geb"
     testRuntime "org.seleniumhq.selenium:selenium-htmlunit-driver:2.47.1"
     testRuntime "net.sourceforge.htmlunit:htmlunit:2.18"
+	
+	// https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+	compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.21'
+	
 }
 
 assets {
