@@ -7,11 +7,26 @@
             table, th, td {
                 border: 1px solid black;
             }
-            td{
-                width:250px;
+            .deploy_info_table{
+                margin-left:5px;
+                margin-right:100px;
+            }
+            .deploy_info_table th{
+                width:80px;
+                background-color:LightSeaGreen ;
+            }
+            .deploy_info_table td{
+                width:80px;
             }
             .history_table{
                 margin-left:50px;
+                margin-right:100px;
+            }
+            .history_table td{
+                width:80px;
+            }
+            .td_head{
+                background-color:LightSeaGreen ;
             }
         </style>
 	</head>
@@ -23,11 +38,10 @@
             <span>></span>
             <a href="/projects">${project.projectName}</a>
 		</div>
-		<div>
+		<div style="margin-right:200px;">
             <h1><strong>项目Meta</strong></h1>
-            <table>
-                <!-- <caption><b>项目Meta</b></caption> -->
-                <col span="1" style="background-color:green;">
+            <table class="deploy_info_table">
+                <col span="1" style="background-color:LightSeaGreen ;">
                 <tbody>
                     <tr>
                         <td>项目名称</td>
@@ -57,13 +71,41 @@
                         <td>是否需要加载Gradle Lib</td>
                         <td>${project.needMountGradleLib}</td>
                     </tr>
-                    <g:each in="${project.portList}" var="portMeta">
+                </tbody>
+            </table>
+            
+
+            <g:form controller="Main" action="deploy" name="deploy_form" id="1"></g:form>
+            <h1><strong>参数配置</strong></h1>
+            <table class="deploy_info_table">
+                <col span="1" style="background-color:LightSeaGreen ;">
+                <tbody>
                     <tr>
-                        <td>Docker端口</td>
-                        <td>${portMeta.port}</td> 
+                        <td>部署人</td>
+                        <td><input form="deploy_form" type="text" name="ownerName" value="annoy" placeholder="annoy"></td>
                     </tr>
                     <tr>
-                        <td>主机端口</td>
+                        <td>分支名称</td>
+                        <td><input form="deploy_form" type="text" name="branchName" value="${project.gitbranchName}" placeholder="${project.gitbranchName}"></td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+            <h1><strong>端口配置</strong></h1>
+            <table class="deploy_info_table">
+                <tr>
+                    <td class="td_head">Docker端口</td>
+                    <td class="td_head">主机端口</td>
+                    <td class="td_head">端口说明</td>
+                    <td class="td_head">自定义配置</td>
+                    <td class="td_head">
+                        固定端口</br>
+                        （仅选择“申请固定端口”时起作用）
+                    </td>
+                </tr>
+                    <g:each in="${project.portList}" var="portMeta">
+                    <tr>
+                        <td>${portMeta.port}</td> 
                         <td>
                             <g:if test="${portMeta.hostPort}==null">
                                 未设置(默认随机申请主机上可用的端口)
@@ -71,26 +113,43 @@
                             <g:else>
                                 ${portMeta.hostPort}
                             </g:else>
-                        </td> 
-                    </tr>
-                    <tr>
-                        <td>说明</td>
+                        </td>
                         <td>${portMeta.description}</td> 
+                        <td>
+                            <dl>
+                                <dt><input form="deploy_form" type="radio" name="port_${portMeta.port}" value="default" checked>使用默认配置</input></dt>
+                                <dt><input form="deploy_form" type="radio" name="port_${portMeta.port}" value="random" >随机分配</input></dt>
+                                <dt><input form="deploy_form" type="radio" name="port_${portMeta.port}" value="apply" >申请固定端口</input></dt>
+                            </dl>
+                        </td>
+                        <td>
+                            <dl>
+                                <dt>
+                                    <input form="deploy_form" type="text" name="applied_host_port" value="-1" placeholder="-1" />
+                                </dt>
+                                <dt>
+                                    <input form="deploy_form" type="hidden" name="projectName" value="${project.projectName}" />
+                                </dt>
+                            </dl>
+                        </td>
                     </tr>
-                    </g:each>  
-                </tbody>
+                    </g:each>
             </table>
+            <input form="deploy_form" style="height:60px;width:100px;margin-left:5px;background-color:DarkGoldenRod;float:right;" type="submit" value="开始部署">
+
             <div>
                 <h1><strong>部署历史</strong></h1>
+            </div>
                 <g:each status="i" in="${histories}" var="history">
-                <table class="history_table">
+                <div>
+                <table class="history_table" class="deploy_info_table">
                     <caption>
-                        近<b>${i}</b>次部署:<strong>${history.containerName}</strong>
+                        <strong>${history.containerName}</strong>(近${i+1}次)
                     </caption>
-                    <col span="1" style="background-color:green;">
+                    <col span="1" style="background-color:LightSeaGreen ;">
                     <tbody>
                             <tr>
-                                <td>容器名称</td>
+                                <td><p>容器名称</p></td>
                                 <td>${history.containerName}</td>
                             </tr>
                             <tr>
@@ -127,7 +186,7 @@
                             </tr>
                             <tr>
                                 <td>环境</td>
-                                <td>${history.contextConfig}</td>
+                                <td><p>${history.contextConfig}</p></td>
                             </tr>
                             <tr>
                                 <td>容器配置</td>
@@ -135,8 +194,9 @@
                             </tr>
                         </tbody>
                 </table>
+                </div>
                 </g:each>
-            </div>
+            
         </div>
 	</body>
 </html>
