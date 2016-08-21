@@ -117,15 +117,15 @@
                         <td>${portMeta.description}</td> 
                         <td>
                             <dl>
-                                <dt><input form="deploy_form" type="radio" name="port_${portMeta.port}" value="default" checked>使用默认配置</input></dt>
-                                <dt><input form="deploy_form" type="radio" name="port_${portMeta.port}" value="random" >随机分配</input></dt>
-                                <dt><input form="deploy_form" type="radio" name="port_${portMeta.port}" value="apply" >申请固定端口</input></dt>
+                                <dt><input form="deploy_form" type="radio" name="${portConfigPrefix}_${portMeta.port}_type" value="default" checked>使用默认配置</input></dt>
+                                <dt><input form="deploy_form" type="radio" name="${portConfigPrefix}_${portMeta.port}_type" value="random" >随机分配</input></dt>
+                                <dt><input form="deploy_form" type="radio" name="${portConfigPrefix}_${portMeta.port}_type" value="apply" >申请固定端口</input></dt>
                             </dl>
                         </td>
                         <td>
                             <dl>
                                 <dt>
-                                    <input form="deploy_form" type="text" name="applied_host_port" value="-1" placeholder="-1" />
+                                    <input form="deploy_form" type="text" name="${portConfigPrefix}_${portMeta.port}_appliedHostPort" value="-1" placeholder="-1" />
                                 </dt>
                                 <dt>
                                     <input form="deploy_form" type="hidden" name="projectName" value="${project.projectName}" />
