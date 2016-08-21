@@ -21,4 +21,9 @@ class MainController {
 		def histories = historyManager.fetchHistories(projectName)
 		render view:"project.gsp",model:[project:pMetas[0],histories:histories]
 	}
+	
+	def deploy(){
+		LOGGER.info "event_name=deploy key={}", params
+		render view:"deploy_info.gsp"
+	}
 }
