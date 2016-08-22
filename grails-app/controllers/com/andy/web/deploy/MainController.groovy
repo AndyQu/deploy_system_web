@@ -3,8 +3,11 @@ package com.andy.web.deploy
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import com.andyqu.OSType
+
 import com.andyqu.docker.deploy.DeployContext
 import com.andyqu.docker.deploy.DeployEngine
+import com.andyqu.docker.deploy.GlobalContext
 import com.andyqu.docker.deploy.ProjectMetaManager
 import com.andyqu.docker.deploy.history.HistoryManager;;
 import com.andyqu.docker.deploy.model.PortMeta
@@ -16,7 +19,9 @@ import groovy.json.JsonSlurper
 
 class MainController {
 	def static final Logger LOGGER = LoggerFactory.getLogger("DeployEngine")
-	def static final String portConfigPrefix="portConfig"
+	def static final String PortConfigPrefix="portConfig"
+	
+	def GlobalContext globalContext
 	def ProjectMetaManager projectMetaManager
 	def HistoryManager historyManager
 	
@@ -34,7 +39,7 @@ class MainController {
 		String projectName=params.id
 		Collection<ProjectMeta> pMetas=projectMetaManager.getProjectMetas([projectName])
 		List<DBObject> histories = historyManager.fetchHistories(projectName)
-		render view:"project.gsp",model:[project:pMetas[0],histories:histories, portConfigPrefix:""]
+		render view:"project.gsp",model:[project:pMetas[0],histories:histories, portConfigPrefix:PortConfigPrefix]
 	}
 	
 	def deploy(){
@@ -51,38 +56,38 @@ class MainController {
 			/*
 			 * 处理端口配置
 			 */
-			
+			LOGGER.info "key={} event_name=show_ports value={}",params, pmeta.getPortList()
 			pmeta.getPortList().each { 
-				PortMeta portMeta->
-					def portParams = params.findAll { it.key.startsWith("${portConfigPrefix}_${portMeta.port}") }
-					LOGGER.info "event_name=process_portConfig key={} values={}",portMeta.getPort(), portParams
+				portMeta->
+					def portParams = params.findAll { 
+						it.key.startsWith("${PortConfigPrefix}_${portMeta.port}") 
+					}
+					LOGGER.info "event_name=process_portConfig key={} values={}",portMeta.port, portParams
 	
-					String type=portParams["${portConfigPrefix}_${portMeta.port}_type"]
+					String type=portParams["${PortConfigPrefix}_${portMeta.port}_type"]
 					if(type=="default"){
-						LOGGER.info "event_name=use_default_config key={}", portMeta.getPort()
+						LOGGER.info "event_name=use_default_config key={}", portMeta.port
 					}else if(type=="random"){
 						portMeta.setHostPort(-1)
-						LOGGER.info "event_name=random_apply_host_port key={}", portMeta.getPort()
+						LOGGER.info "event_name=random_apply_host_port key={}", portMeta.port
 					}else if(type=="apply"){
-						int appliedPort=Integer.parseInt(portParams["${portConfigPrefix}_${portMeta.port}_appliedHostPort"])
+						int appliedPort=Integer.parseInt(portParams["${PortConfigPrefix}_${portMeta.port}_appliedHostPort"])
 						portMeta.setHostPort(appliedPort)
-						LOGGER.info "event_name=apply_fixed_host_port key={} host_port={}", portMeta.getPort(), appliedPort
+						LOGGER.info "event_name=apply_fixed_host_port key={} host_port={}", portMeta.port, appliedPort
 					}
 			}
 			
 			
 			//合并：环境配置
 			DeployContext deployContext=new DeployContext()
-			//TODO
-			deployContext.setEnvConfigFile("/localhost_mac/envConf.json")
 			def projectsMeta=[
 				"ownerName": ownerName,
 				"projects" : [pmeta]
 			]
 			LOGGER.debug "key={} event_name=generated_projectsMeta value={}", params, projectsMeta
-			deployContext.config = Tool.objsToJson(projectsMeta	, deployContext.hostConfig	)
+			deployContext.config = Tool.objsToJson(projectsMeta	, globalContext.hostConfig	)
 			LOGGER.info "key={} event_name=generated_final_deployContext value={}", params, deployContext
-			
+			def key=params
 			/*
 			 * 开始部署
 			 */
@@ -90,13 +95,15 @@ class MainController {
 			new Thread(){
 						@Override
 						public void run(){
-							LOGGER.info "key={} event_name=useDockerSock:${context.config.useDockerSock}", params
+							LOGGER.info "key={} event_name=useDockerSock:${deployContext.config.useDockerSock}", key
 							DeployEngine engine=null
 							if(deployContext.config.useDockerSock==1){
 								engine = new DeployEngine()
 							}else{
 								engine = new DeployEngine(deployContext.config.dockerDaemon.host, deployContext.config.dockerDaemon.port)
 							}
+							engine.projectMetaManager=projectMetaManager
+							engine.historyManager=historyManager
 							engine.deploy(
 									deployContext.config.ownerName,
 									deployContext.config.projects as List<ProjectMeta>,
@@ -111,4 +118,6 @@ class MainController {
 			redirect uri:"/error"
 		}
 	}
+	
+	
 }
