@@ -15,6 +15,8 @@ import com.andyqu.docker.deploy.model.ProjectMeta
 import com.mongodb.DBObject
 
 import com.andyqu.docker.deploy.Tool
+
+import groovy.json.JsonBuilder;
 import groovy.json.JsonSlurper
 
 class MainController {
@@ -45,7 +47,7 @@ class MainController {
 	def deploy(){
 		LOGGER.info "event_name=deploy key={}", params
 		
-		def ownerName=params.owerName
+		def ownerName=params.ownerName
 		def branchName=params.branchName
 		def projectName=params.projectName
 		try{
@@ -80,6 +82,7 @@ class MainController {
 			
 			//合并：环境配置
 			DeployContext deployContext=new DeployContext()
+			String dockerName = Tool.generateContainerName(ownerName, [pmeta])
 			def projectsMeta=[
 				"ownerName": ownerName,
 				"projects" : [pmeta]
@@ -88,6 +91,7 @@ class MainController {
 			deployContext.config = Tool.objsToJson(projectsMeta	, globalContext.hostConfig	)
 			LOGGER.info "key={} event_name=generated_final_deployContext value={}", params, deployContext
 			def key=params
+			
 			/*
 			 * 开始部署
 			 */
@@ -105,6 +109,7 @@ class MainController {
 							engine.projectMetaManager=projectMetaManager
 							engine.historyManager=historyManager
 							engine.deploy(
+									dockerName,
 									deployContext.config.ownerName,
 									deployContext.config.projects as List<ProjectMeta>,
 									deployContext.config.imgName,
@@ -112,7 +117,10 @@ class MainController {
 									)}
 					}.start()
 			
-			render view:"deploy_info.gsp"
+			render view:"deploy_info.gsp",model:[
+					"context":deployContext.config,
+					"dockerName":dockerName
+				]
 		}catch(Exception e){
 			LOGGER.error "event_name=deploy_exception key={} e={}",params, e
 			redirect uri:"/error"
