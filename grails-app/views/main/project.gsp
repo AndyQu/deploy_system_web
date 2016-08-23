@@ -163,11 +163,19 @@
                             </tr>
                             <tr>
                                 <td>环境</td>
-                                <td><p>${history.contextConfig}</p></td>
+                                <td>
+                                    <pre>
+                                    ${new groovy.json.JsonBuilder(history.contextConfig).toPrettyString()}
+                                    </pre>
+                                </td>
                             </tr>
                             <tr>
                                 <td>容器配置</td>
-                                <td>${history.containerConfig}</td>
+                                <td>
+                                    <pre>
+                                    ${new groovy.json.JsonBuilder(history.containerConfig).toPrettyString()}
+                                    </pre>
+                                </td>
                             </tr>
                         </tbody>
                 </table>

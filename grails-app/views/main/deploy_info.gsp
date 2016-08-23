@@ -20,7 +20,7 @@
 						<td>部署配置</td>
 						<td>
 							<pre>
-							${new groovy.json.JsonBuilder(context).toPrettyString().encodeAsHTML()}
+							${new groovy.json.JsonBuilder(context).toPrettyString()}
 							</pre>
 						</td>
 					</tr>
