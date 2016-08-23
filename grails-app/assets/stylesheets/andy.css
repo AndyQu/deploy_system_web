@@ -1,0 +1,29 @@
+.history_table {
+	margin-right: 100px;
+}
+
+.history_table td {
+	width: 80px;
+}
+
+.td_head {
+	background-color: LightSeaGreen;
+}
+
+table, th, td {
+	border: 1px solid black;
+}
+
+.deploy_info_table {
+	margin-left: 5px;
+	margin-right: 100px;
+}
+
+.deploy_info_table th {
+	width: 80px;
+	background-color: LightSeaGreen;
+}
+
+.deploy_info_table td {
+	width: 80px;
+}
