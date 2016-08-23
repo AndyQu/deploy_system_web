@@ -4,30 +4,7 @@
 		<meta name="layout" content="main"/>
 		<title>部署系统-${project.projectName}</title>
         <style>
-            table, th, td {
-                border: 1px solid black;
-            }
-            .deploy_info_table{
-                margin-left:5px;
-                margin-right:100px;
-            }
-            .deploy_info_table th{
-                width:80px;
-                background-color:LightSeaGreen ;
-            }
-            .deploy_info_table td{
-                width:80px;
-            }
-            .history_table{
-                margin-left:50px;
-                margin-right:100px;
-            }
-            .history_table td{
-                width:80px;
-            }
-            .td_head{
-                background-color:LightSeaGreen ;
-            }
+            
         </style>
 	</head>
 	<body>
@@ -75,7 +52,7 @@
             </table>
             
 
-            <g:form controller="Main" action="deploy" name="deploy_form" id="1"></g:form>
+            <g:form controller="Main" action="deploy" name="deploy_form" id="${project.projectName}"></g:form>
             <h1><strong>参数配置</strong></h1>
             <table class="deploy_info_table">
                 <col span="1" style="background-color:LightSeaGreen ;">
@@ -142,7 +119,7 @@
             </div>
                 <g:each status="i" in="${histories}" var="history">
                 <div>
-                <table class="history_table" class="deploy_info_table">
+                <table class="history_table" class="deploy_info_table" style="margin-left: 50px;">
                     <caption>
                         <strong>${history.containerName}</strong>(近${i+1}次)
                     </caption>
