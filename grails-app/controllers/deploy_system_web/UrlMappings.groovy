@@ -8,14 +8,31 @@ class UrlMappings {
                 // apply constraints here
             }
         }
-		"/projects/${id}"{
-			controller="Main"
-			action="project"
-		}
 		"/projects"{
 			controller="Main"
 			action="index"
 		}
+		"/projects/${id}"{
+			controller="Main"
+			action="project"
+		}
+		"/projects/${pname}/deploy"{
+			controller="Main"
+			action="deploy"
+		}
+		"/projects/${pname}/histories/${id}"{
+			//id=container id
+			controller="Main"
+			action="deploy_history"
+			method: "POST"
+		}
+		
+		"/exstatic"{
+			controller="Static"
+			action="index"
+			method="GET"
+		}
+		
 
         "/"(view:"/index")
         "500"(view:'/error')
