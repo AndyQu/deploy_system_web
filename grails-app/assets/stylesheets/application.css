@@ -13,4 +13,5 @@
 *= require mobile
 *= require_self
 *= require andy
+*= require logtail
 */
