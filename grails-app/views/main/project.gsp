@@ -13,7 +13,7 @@
             <span>></span>
             <a href="/projects">项目列表</a>
             <span>></span>
-            <a href="/projects">${project.projectName}</a>
+            <a href="/projects/${project.projectName}">${project.projectName}</a>
 		</div>
 		<div style="margin-right:200px;">
             <h1><strong>项目Meta</strong></h1>
@@ -52,7 +52,8 @@
             </table>
             
 
-            <g:form controller="Main" action="deploy" name="deploy_form" id="${project.projectName}"></g:form>
+            <!-- <g:form controller="Main" action="deploy" name="deploy_form" id="${project.projectName}"></g:form> -->
+            <form id="deploy_form" name="deploy_form" action="/projects/${project.projectName}/deploy" method="post" ></form>
             <h1><strong>参数配置</strong></h1>
             <table class="deploy_info_table">
                 <col span="1" style="background-color:LightSeaGreen ;">
@@ -131,27 +132,35 @@
                             </tr>
                             <tr>
                                 <td>容器ID</td>
-                                <td>${history.containerId}</td>
+                                <td>
+                                    <a href="/projects/${project.projectName}/histories/${history.containerId}">
+                                    ${history.containerId}
+                                    </a>
+                                </td>
                             </tr>
                             <tr>
                                 <td>主机名称</td>
                                 <td>${history.hostName}</td>
                             </tr>
+                            <!--
                             <tr>
                                 <td>主机IP</td>
                                 <td>${history.hostIp}</td>
                             </tr>
+                            -->
                             <tr>
                                 <td>开始时间</td>
                                 <td>${history.startTime}</td>
                             </tr>
-                            <tr>
-                                <td>开始时间戳</td>
-                                <td>${history.startTimeStamp}</td>
-                            </tr>
+                            
                             <tr>
                                 <td>结束时间</td>
                                 <td>${history.endTime}</td>
+                            </tr>
+                            <!--
+                            <tr>
+                                <td>开始时间戳</td>
+                                <td>${history.startTimeStamp}</td>
                             </tr>
                             <tr>
                                 <td>结束时间戳</td>
@@ -177,6 +186,7 @@
                                     </pre>
                                 </td>
                             </tr>
+                            -->
                         </tbody>
                 </table>
                 </div>
