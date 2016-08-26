@@ -46,6 +46,7 @@ class MainController {
 	
 	def deploy(){
 		LOGGER.info "event_name=deploy key={}", params
+		assert params.projectName == params.pname
 		
 		def ownerName=params.ownerName
 		def branchName=params.branchName
@@ -116,16 +117,22 @@ class MainController {
 									deployContext.config
 									)}
 					}.start()
-			
-			render view:"deploy_info.gsp",model:[
-					"context":deployContext.config,
-					"dockerName":dockerName
-				]
+			//TODO
+			redirect uri:"/projects"
 		}catch(Exception e){
 			LOGGER.error "event_name=deploy_exception key={} e={}",params, e
 			redirect uri:"/error"
 		}
 	}
 	
-	
+	def deploy_history(){
+		LOGGER.info "event_name=deploy_history key={}", params
+		def projectName=params.pname
+		List<DBObject> histories = historyManager.fetchHistories projectName, [containerId:params.id]
+		if(histories.isEmpty()){
+			render view:"/error.gsp", [message:"历史记录不存在"]
+		}else{
+			render view:"history.gsp",model:[history:histories.getAt(0)]
+		}
+	}
 }
