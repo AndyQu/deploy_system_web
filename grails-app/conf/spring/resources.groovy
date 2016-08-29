@@ -21,4 +21,12 @@ beans = {
 	dockerTool(com.andyqu.docker.deploy.DockerTool){
 
 	}
+	resourceHttpRequestHandler(org.springframework.web.servlet.resource.ResourceHttpRequestHandler){
+		locations=["file:/"]
+	}
+	simpleUrlHandlerMapping(org.springframework.web.servlet.handler.SimpleUrlHandlerMapping){
+		urlMap=[
+			"/resources/**":ref("resourceHttpRequestHandler")
+			] 
+	}
 }
