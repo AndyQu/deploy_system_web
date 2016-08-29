@@ -3,6 +3,8 @@ package com.andy.web.deploy
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import java.io.File
+
 import com.andyqu.OSType
 
 import com.andyqu.docker.deploy.DeployContext
@@ -128,11 +130,22 @@ class MainController {
 	def deploy_history(){
 		LOGGER.info "event_name=deploy_history key={}", params
 		def projectName=params.pname
-		List<DBObject> histories = historyManager.fetchHistories projectName, [containerId:params.id]
+//		List<DBObject> histories = historyManager.fetchHistories projectName, [containerId:params.id]
+		List<DBObject> histories = historyManager.fetchHistories projectName, [containerName:params.id]
 		if(histories.isEmpty()){
 			render view:"/error.gsp", [message:"历史记录不存在"]
 		}else{
-			render view:"history.gsp",model:[history:histories.getAt(0)]
+			def history=histories.getAt(0)
+			assert history.contextConfig.workFolder!=null
+			def files=[]
+			new File(history.contextConfig.workFolder+File.separator+params.id).eachFileRecurse {
+				File it->
+					if(it.isFile()){
+						files.add(it)
+					}
+			}
+			
+			render view:"history.gsp",model:[history:history, fileList:files]
 		}
 	}
 }

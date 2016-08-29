@@ -5,14 +5,11 @@
 		<title>部署系统-${history.projectNames[0]}</title>
         <!-- <script src="jquery.logviewer.js"></script> -->
         <script type="text/javascript">
-            //$(document).bind("ready", function() {
-            //    $('#logcontent').logViewer({logUrl: '/exstatic?file=/tmp/docker-deploy/Murray-CRM_dev/deploy.log'});
-            //});
+            function clickLogFile(fileURL){
+                setURL(fileURL)
+                reStart()
+            }
         </script>
-
-        <style>
-            
-        </style>
 	</head>
 	<body>
 		<div>
@@ -22,17 +19,22 @@
             <span>></span>
             <a href="/projects/${history.projectNames[0]}">${history.projectNames[0]}</a>
 		</div>
-        <!--<div>
-            <textarea id="logcontent" autocomplete="off">
-            </textarea>
-        </div>-->
+		<div>
+			<h1>日志文件列表</h1>
+			<ol>
+				<g:each status="i" in="${fileList}" var="logFile">
+					<li>
+                        <button class="btn btn-default" type="submit" onclick="clickLogFile('/resources/${logFile.getPath()}')">
+                            ${logFile.getPath()}
+                        </button>
+					</li>
+				</g:each>
+			</ol>
+		</div>
         <div id="header">
-            js-logtail.
-            <a href="./">Reversed</a> or
-            <a href="./?noreverse">chronological</a> view.
-            <a id="pause" href='#'>Pause</a>.
+            <a id="pauseButton" href='#'>Pause</a>.
         </div>
-        <pre id="data">Loading...</pre>
+        <pre id="logFileContent">Loading...</pre>
         <div style="margin-right:100px;">
             <table class="history_table" class="deploy_info_table" style="margin-left: 50px;">
                     <caption>
