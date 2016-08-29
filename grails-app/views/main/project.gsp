@@ -128,7 +128,11 @@
                     <tbody>
                             <tr>
                                 <td><p>容器名称</p></td>
-                                <td>${history.containerName}</td>
+                                <td>
+                                		<a href="/projects/${project.projectName}/histories/${history.containerName}">
+                                		${history.containerName}
+                                		</a>
+                                	</td>
                             </tr>
                             <tr>
                                 <td>容器ID</td>
