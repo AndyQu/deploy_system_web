@@ -11,6 +11,7 @@ import com.andyqu.docker.deploy.DeployContext
 import com.andyqu.docker.deploy.DeployEngine
 import com.andyqu.docker.deploy.GlobalContext
 import com.andyqu.docker.deploy.ProjectMetaManager
+import com.andyqu.docker.deploy.history.DeployHistory
 import com.andyqu.docker.deploy.history.HistoryManager;;
 import com.andyqu.docker.deploy.model.PortMeta
 import com.andyqu.docker.deploy.model.ProjectMeta
@@ -98,6 +99,8 @@ class MainController {
 			/*
 			 * 开始部署
 			 */
+			def contextFolderPath = "${deployContext.config.workFolder}/${dockerName}/"
+			Logger newLogger=Tool.configureLogger(contextFolderPath, dockerName)
 			
 			new Thread(){
 						@Override
@@ -109,6 +112,7 @@ class MainController {
 							}else{
 								engine = new DeployEngine(deployContext.config.dockerDaemon.host, deployContext.config.dockerDaemon.port)
 							}
+							engine.logger=newLogger
 							engine.projectMetaManager=projectMetaManager
 							engine.historyManager=historyManager
 							engine.deploy(
@@ -119,33 +123,55 @@ class MainController {
 									deployContext.config
 									)}
 					}.start()
-			//TODO
-			redirect uri:"/projects"
+			LOGGER.info "event_name=chain_deploy_history() containerName={}", dockerName
+//			chain action:"deploy_history", params: [pname:projectName, containerName: dockerName]
+//			chain action:"deploy_history", model: [history:
+//				new DeployHistory(
+//						contextConfig:deployContext.config
+//					),
+//				containerName:dockerName
+//				]
+			deploy_history new DeployHistory(
+						contextConfig:deployContext.config,
+						projectNames:[projectName]
+					),
+				dockerName
 		}catch(Exception e){
 			LOGGER.error "event_name=deploy_exception key={} e={}",params, e
 			redirect uri:"/error"
 		}
 	}
 	
-	def deploy_history(){
-		LOGGER.info "event_name=deploy_history key={}", params
+	def show_deploy_history(){
+		LOGGER.info "event_name=show_deploy_history key={}", params
 		def projectName=params.pname
-//		List<DBObject> histories = historyManager.fetchHistories projectName, [containerId:params.id]
-		List<DBObject> histories = historyManager.fetchHistories projectName, [containerName:params.id]
+		def containerName=params.containerName
+		List<DBObject> histories = historyManager.fetchHistories projectName, [containerName:containerName]
 		if(histories.isEmpty()){
 			render view:"/error.gsp", [message:"历史记录不存在"]
-		}else{
-			def history=histories.getAt(0)
-			assert history.contextConfig.workFolder!=null
-			def files=[]
-			new File(history.contextConfig.workFolder+File.separator+params.id).eachFileRecurse {
-				File it->
-					if(it.isFile()){
-						files.add(it)
-					}
+		}else{ 
+			if(histories.size()>=2){
+				LOGGER.error "event_name=multiple_histories_found value={}", histories
 			}
-			
-			render view:"history.gsp",model:[history:history, fileList:files]
+//			chain action:"deploy_history",model:[history:histories.get(0), containerName:containerName]
+			deploy_history histories.get(0),containerName
 		}
 	}
+	
+	def deploy_history(history, containerName){
+//			def history=chainModel.history
+//			def containerName=chainModel.containerName
+			assert history.contextConfig.workFolder!=null
+			File historyFolder=new File(history.contextConfig.workFolder+File.separator+containerName)
+			def files=[]
+			if(historyFolder.exists()){
+				historyFolder.eachFileRecurse {
+					File it->
+						if(it.isFile()){
+							files.add(it)
+						}
+				}
+			}
+			render view:"history.gsp",model:[history:history, fileList:files]
+		}
 }

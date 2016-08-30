@@ -40,7 +40,7 @@ var poll = 3000; /* 1s */
 var kill = false;
 var loading = false;
 var pause = false;
-var reverse = true;
+var reverse = false;
 var log_data = "";
 var log_file_size = 0;
 

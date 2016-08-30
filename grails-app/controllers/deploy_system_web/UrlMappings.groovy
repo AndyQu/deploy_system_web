@@ -20,11 +20,11 @@ class UrlMappings {
 			controller="Main"
 			action="deploy"
 		}
-		"/projects/${pname}/histories/${id}"{
+		"/projects/${pname}/histories/${containerName}"{
 			//id=container id
 			controller="Main"
-			action="deploy_history"
-			method: "POST"
+			action="show_deploy_history"
+//			method: "POST"
 		}
 		
 		"/exstatic"{
