@@ -5,10 +5,6 @@
 		<title>部署系统-${history.projectNames[0]}</title>
         <!-- <script src="jquery.logviewer.js"></script> -->
         <script type="text/javascript">
-            function clickLogFile(fileURL){
-                setURL(fileURL)
-                reStart()
-            }
         </script>
 	</head>
 	<body>
@@ -22,19 +18,54 @@
 		<div>
 			<h1>日志文件列表</h1>
 			<ol>
-				<g:each status="i" in="${fileList}" var="logFile">
-					<li>
-                        <button class="btn btn-default" type="submit" onclick="clickLogFile('/resources/${logFile.getPath()}')">
-                            ${logFile.getPath()}
-                        </button>
-					</li>
-				</g:each>
+                <g:if test="${fileList.isEmpty()}">
+                    <h3 style="color:red;text-decoration:underline;font-style:oblique;">Notice:日志文件已经被删除</h3>
+                </g:if>
+                <g:else>
+                    <g:each status="i" in="${fileList}" var="logFile">
+                        <li>
+                            <button 
+                                id="/resources/${logFile.getPath()}"
+                                class="btn btn-default" 
+                                type="submit" 
+                                onclick="clickLogFile(this)">
+                                ${logFile.getPath()}
+                            </button>
+                        </li>
+                    </g:each>
+                </g:else>
 			</ol>
 		</div>
-        <div id="header">
-            <a id="pauseButton" href='#'>Pause</a>.
+        <div style="margin-top:20px;margin-bottom:20px;">
+            <button id="pauseButton" class="btn btn-danger" type="submit">暂停tail日志</buttona>.
         </div>
-        <pre id="logFileContent">Loading...</pre>
+        <div style="margin-top:20px;margin-bottom:20px;margin-left:50px;margin-right:100px;">
+            <table class="table table-striped">
+                <tr>
+                    <td>文件URL</td>
+                    <td id="logFileTitle"></td>
+                </tr>
+                <tr>
+                    <td>加载状态</td>
+                    <td id="loadState"></td>
+                </tr>
+                <tr>
+                    <td>是否首次加载</td>
+                    <td id="isFirstLoad"></td>
+                </tr>
+                <tr>
+                    <td>请求的字节范围</td>
+                    <td id="requestRange"></td>
+                </tr>
+                <tr>
+                    <td>接收到的字节范围</td>
+                    <td id="responseRange"></td>
+                </tr>
+            </table>
+        </div>
+        <div style="margin-top:20px;margin-bottom:20px;margin-left:50px;margin-right:100px;">
+            <pre id="logFileContent">Loading...</pre>
+        </div>
         <div style="margin-right:100px;">
             <table class="history_table" class="deploy_info_table" style="margin-left: 50px;">
                     <caption>
