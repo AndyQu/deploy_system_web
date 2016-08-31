@@ -3,9 +3,7 @@
 	<head>
 		<meta name="layout" content="main"/>
 		<title>部署系统-${history.projectNames[0]}</title>
-        <!-- <script src="jquery.logviewer.js"></script> -->
-        <script type="text/javascript">
-        </script>
+        <!--<script src="/assets/main/tmp.js"></script>-->
 	</head>
 	<body>
 		<div>
@@ -25,7 +23,8 @@
                     <g:each status="i" in="${fileList}" var="logFile">
                         <li>
                             <button 
-                                id="/resources/${logFile.getPath()}"
+                                id="resources${logFile.getPath().replace(File.separator,"").replace(".","")}"
+                                data-url="/resources/${logFile.getPath()}"
                                 class="btn btn-default" 
                                 type="submit" 
                                 onclick="clickLogFile(this)">
@@ -50,16 +49,16 @@
                     <td id="loadState"></td>
                 </tr>
                 <tr>
-                    <td>是否首次加载</td>
-                    <td id="isFirstLoad"></td>
-                </tr>
-                <tr>
                     <td>请求的字节范围</td>
                     <td id="requestRange"></td>
                 </tr>
                 <tr>
                     <td>接收到的字节范围</td>
                     <td id="responseRange"></td>
+                </tr>
+                <tr>
+                    <td><strong>Notice</strong></td>
+                    <td id="notice"></td>
                 </tr>
             </table>
         </div>

@@ -4,53 +4,63 @@
 var logContentArea = "#logFileContent";
 var pauseButton = "#pauseButton";
 
-var fileTitle="#logFileTitle"
-var loadState="#loadState"
-var isFirstLoad="#isFirstLoad"
-var requestRange="#requestRange"
-var responseRange="#responseRange"
+var idFileTitle="#logFileTitle"
+var idLoadState="#loadState"
+var idRequestRange="#requestRange"
+var idResponseRange="#responseRange"
+var idNotice="#notice"
 
 function setState(stateMap){
-	if(stateMap.fileTitle!=null){
-		$(fileTitle).html(stateMap.fileTitle)
+	if(stateMap.idFileTitle!=null){
+		$(idFileTitle).html(stateMap.idFileTitle)
 	}
-	if(stateMap.loadState!=null){
-		$(loadState).html(stateMap.loadState)
+	if(stateMap.idLoadState!=null){
+		$(idLoadState).html(stateMap.idLoadState)
 	}
-	if(stateMap.isFirstLoad!=null){
-		$(isFirstLoad).html(stateMap.isFirstLoad)
+	if(stateMap.idRequestRange!=null){
+		$(idRequestRange).html(stateMap.idRequestRange)
 	}
-	if(stateMap.requestRange!=null){
-		$(requestRange).html(stateMap.requestRange)
+	if(stateMap.idResponseRange!=null){
+		$(idResponseRange).html(stateMap.idResponseRange)
 	}
-	if(stateMap.responseRange!=null){
-		$(responseRange).html(stateMap.responseRange)
+	if(stateMap.idNotice!=null){
+		$(idNotice).html(stateMap.idNotice)
 	}
 }
+/**
+ * Context variables
+ */
+var FIX_RETURN = true
+var MAX_LOAD_BYTES = 30 * 1024; /* 30KB */
+var TAIL_INTERVAL = 3000; /* 1s */
 
+var logFileSize = 0
+var logData = "";
+var requestRange= null
+var contentSize=0
 
-var scrollelems = [ "html", "body" ];
+var MODE_FETCH_FILE_CUR_TAIL=0
+var MODE_FETCH_FILE_NEW_TAIL=1
+var mode = MODE_FETCH_FILE_CUR_TAIL
 
-var url = "/resources/tmp/docker-deploy/web.log";
-var fileEleId=null
-var fix_rn = true;
-var load = 30 * 1024; /* 30KB */
-var poll = 3000; /* 1s */
+var isLoading = false;
+var tailTimer = null
+// var targetFileUrl = "/resources/tmp/docker-deploy/web.log";
+var targetFileUrl=null
 
 var kill = false;
-var loading = false;
 var pause = false;
 var reverse = false;
-var log_data = "";
-var log_file_size = 0;
-
-var timeoutVar = null
+var scrollelems = [ "html", "body" ];
 
 function clickLogFile(fileEle){
 	var fileURL=fileEle.getAttribute("id")
-	fileEleId=fileURL
+	tailYourLog(fileURL)
+}
+
+function tailYourLog(fileURL){
 	if(getURL()!=fileURL){
-		fileEleId=fileURL
+		targetFileUrl=fileURL
 		setURL(fileURL)
 		reStart()
 	}else{
@@ -58,16 +68,18 @@ function clickLogFile(fileEle){
 }
 
 function getURL(){
-	return url
+	return targetFileUrl
 }
 function setURL(fileUrl) {
-	url = fileUrl
+	targetFileUrl = fileUrl
 }
 function reStart() {
-	clearTimeout(timeoutVar)
+	clearTimeout(tailTimer)
 	pause = false
-	log_file_size=0
-	get_log()
+	logFileSize=0
+	logData=""
+	showLog()
+	tailLog()
 }
 
 /* :-( https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/parseInt */
@@ -80,129 +92,121 @@ function parseInt2(value) {
 	return v;
 }
 
-function get_log() {
-	if (kill | loading) return;
-	loading = true;
-
-	var range;
-	var first_load;
-	var must_get_206;
-	if (log_file_size === 0) {
-		/* Get the last 'load' bytes */
-		range = "-" + load.toString();
-		//			range = load.toString() + "-";
-		first_load = true;
-		must_get_206 = false;
+function refreshRequestParams(){
+	if (logFileSize === 0) {
+		requestRange = "-" + MAX_LOAD_BYTES.toString();
+		mode=MODE_FETCH_FILE_CUR_TAIL
 	} else {
-		/* Get the (log_file_size - 1)th byte, onwards. */
-		range = (log_file_size - 1).toString() + "-";
-		first_load = false;
-		must_get_206 = log_file_size > 1;
+		requestRange = (logFileSize - 1).toString() + "-";
+		mode=MODE_FETCH_FILE_NEW_TAIL
 	}
+}
+function process200(data, s, xhr){
+	contentSize = logFileSize = parseInt2(xhr.getResponseHeader("Content-Length"));
+
+	logData=data
+	showLog()
 
 	setState({
-		fileTitle:fileEleId,
-		loadState:"loading",
-		isFirstLoad:first_load,
-		requestRange:range,
-		responseRange:""
+		idFileTitle:targetFileUrl,
+		idLoadState:"loaded",
+		idResponseRange:"",
+		idNotice:"Server不支持Partial Get"
+	})
+	//TODO
+	//显示Notice：Server不支持Partial Get
+}
+function process206(data,s,xhr){
+	var c_r = xhr.getResponseHeader("Content-Range");
+	contentRange=c_r
+	if (!c_r)
+		throw "Server did not respond with a Content-Range";
+
+	logFileSize = parseInt2(c_r.split("/")[1]);
+	contentSize = parseInt2(xhr.getResponseHeader("Content-Length"));
+	
+	var added = false;
+	if (mode==MODE_FETCH_FILE_CUR_TAIL) {
+		logData = data;
+		added = true;
+	} else if(mode==MODE_FETCH_FILE_NEW_TAIL){
+		/* Drop the first byte (see above) */
+		if (data.length > 1){
+			added = true;
+			logData += data.substring(1);
+			if (logData.length > MAX_LOAD_BYTES) {
+				var start = logData.indexOf("\n", logData.length - MAX_LOAD_BYTES);
+				logData = logData.substring(start + 1);
+			}
+		}
+		else{
+			// throw "received data length<=1 data="+data
+		}
+	}else{
+		throw "invalid mode:"+mode;
+	}
+
+	if (added)
+		showLog(added);
+	setState({
+		idFileTitle:targetFileUrl,
+		idLoadState:"loaded",
+		idResponseRange:contentRange,
+		idNotice:""
+	})
+	tailTimer = setTimeout(tailLog, TAIL_INTERVAL);
+}
+
+function processError(xhr, s, t) {
+	isLoading = false;
+	if (xhr.status === 416 || xhr.status == 404) {
+		/* 416: Requested range not satisfiable: log was truncated. */
+		/* 404: Retry soon, I guess */
+		tailTimer = setTimeout(tailLog, TAIL_INTERVAL);
+	}
+	setState({
+		idFileTitle:targetFileUrl,
+		idLoadState:"load Error",
+		idResponseRange:"",
+		idNotice:"http status code:"+xhr.status+",response:"+xhr.responseText
+	})
+}
+
+
+function tailLog() {
+	if (kill | isLoading) return;
+	isLoading = true;
+
+	refreshRequestParams()
+
+	setState({
+		idFileTitle:targetFileUrl,
+		idLoadState:"loading",
+		idRequestRange:requestRange,
+		idResponseRange:"",
+		idNotice:""
 	})
 	/* The "log_file_size - 1" deliberately reloads the last byte, which we already
 	 * have. This is to prevent a 416 "Range unsatisfiable" error: a response
 	 * of length 1 tells us that the file hasn't changed yet. A 416 shows that
 	 * the file has been trucnated */
-	$.ajax(url, {
+	$.ajax(targetFileUrl, {
 		dataType : "text",
 		cache : false,
 		headers : {
-			Range : "bytes=" + range
+			Range : "bytes=" + requestRange
 		},
 		success : function(data, s, xhr) {
-			loading = false;
-
-			var content_size;
-			var contentRange=""
+			isLoading = false;
 			if (xhr.status === 206) {
-				var c_r = xhr.getResponseHeader("Content-Range");
-				contentRange=c_r
-				if (!c_r)
-					throw "Server did not respond with a Content-Range";
-
-				log_file_size = parseInt2(c_r.split("/")[1]);
-				content_size = parseInt2(xhr.getResponseHeader("Content-Length"));
+				return process206(data,s,xhr)
 			} else if (xhr.status === 200) {
-				if (must_get_206)
-					throw "Expected 206 Partial Content";
-
-				content_size = log_file_size = parseInt2(xhr.getResponseHeader("Content-Length"));
-				contentRange=content_size
+				return process200(data, s, xhr)
 			} else {
 				throw "Unexpected status " + xhr.status;
 			}
-
-			if (first_load && data.length > load)
-				throw "Server's response was too long";
-
-			var added = false;
-
-			if (first_load) {
-				/* Clip leading part-line if not the whole file */
-				if (content_size < log_file_size) {
-					var start = data.indexOf("\n");
-					log_data = data.substring(start + 1);
-				} else {
-					log_data = data;
-				}
-
-				added = true;
-			} else {
-				/* Drop the first byte (see above) */
-				log_data += data.substring(1);
-
-				if (log_data.length > load) {
-					var start = log_data.indexOf("\n", log_data.length - load);
-					log_data = log_data.substring(start + 1);
-				}
-
-				if (data.length > 1)
-					added = true;
-			}
-
-			if (added)
-				show_log(added);
-			setState({
-				fileTitle:fileEleId,
-				loadState:"loaded",
-				isFirstLoad:first_load,
-				// requestRange:range,
-				responseRange:contentRange
-			})
-			timeoutVar = setTimeout(get_log, poll);
 		},
-		error : function(xhr, s, t) {
-			loading = false;
-
-			if (xhr.status === 416 || xhr.status == 404) {
-				/* 416: Requested range not satisfiable: log was truncated. */
-				/* 404: Retry soon, I guess */
-
-				log_file_size = 0;
-				log_data = "";
-				show_log();
-
-				
-				timeoutVar = setTimeout(get_log, poll);
-			} else {
-				throw "Unknown AJAX Error (status " + xhr.status + ")";
-			}
-			setState({
-				fileTitle:fileEleId,
-				loadState:"load Error",
-				isFirstLoad:first_load,
-				// requestRange:range,
-				responseRange:"http status code:"+xhr.status+",response:"+xhr.responseText
-			})
-		}
+		error : processError
 	});
 }
 
@@ -216,10 +220,10 @@ function scroll(where) {
 	}
 }
 
-function show_log() {
+function showLog() {
 	if (pause) return;
 
-	var t = log_data;
+	var t = logData;
 
 	if (reverse) {
 		var t_a = t.split(/\n/g);
@@ -229,7 +233,7 @@ function show_log() {
 		t = t_a.join("\n");
 	}
 
-	if (fix_rn)
+	if (FIX_RETURN)
 		t = t.replace(/\n/g, "\r\n");
 	for (var i = 0; i < 5; i++) {
 		t = t + "\r\n"
@@ -264,9 +268,7 @@ $(document).ready(function() {
 	$(pauseButton).click(function(e) {
 		pause = !pause;
 		$(pauseButton).text(pause ? "开始tail日志" : "暂停tail日志");
-		show_log();
+		showLog();
 		e.preventDefault();
 	});
-//打开页面时不加载日志
-//		get_log();
 });
