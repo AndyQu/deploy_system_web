@@ -53,10 +53,7 @@ var pause = false;
 var reverse = false;
 var scrollelems = [ "html", "body" ];
 
-function clickLogFile(fileEle){
-	var fileURL=fileEle.getAttribute("id")
-	tailYourLog(fileURL)
-}
+
 
 function tailYourLog(fileURL){
 	if(getURL()!=fileURL){
@@ -79,6 +76,7 @@ function reStart() {
 	logFileSize=0
 	logData=""
 	showLog()
+	while(isLoading){}
 	tailLog()
 }
 

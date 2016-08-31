@@ -11,6 +11,7 @@ import com.andyqu.docker.deploy.DeployContext
 import com.andyqu.docker.deploy.DeployEngine
 import com.andyqu.docker.deploy.GlobalContext
 import com.andyqu.docker.deploy.ProjectMetaManager
+import com.andyqu.docker.deploy.event.DeployEvent
 import com.andyqu.docker.deploy.history.DeployHistory
 import com.andyqu.docker.deploy.history.HistoryManager;;
 import com.andyqu.docker.deploy.model.PortMeta
@@ -18,12 +19,14 @@ import com.andyqu.docker.deploy.model.ProjectMeta
 import com.mongodb.DBObject
 
 import com.andyqu.docker.deploy.Tool
+import com.google.common.eventbus.EventBus
+import com.google.common.eventbus.Subscribe
 
 import groovy.json.JsonBuilder;
 import groovy.json.JsonSlurper
 
 class MainController {
-	def static final Logger LOGGER = LoggerFactory.getLogger("DeployEngine")
+	def static final Logger LOGGER = LoggerFactory.getLogger("MainController")
 	def static final String PortConfigPrefix="portConfig"
 	
 	def GlobalContext globalContext
@@ -31,6 +34,10 @@ class MainController {
 	def HistoryManager historyManager
 	
 	def JsonSlurper jsonSlurper
+	
+	def EventBus geventBus
+	
+	def DeployService deployService
 	
     def index() {
 			def projectNames = projectMetaManager.getAllProjectNames()
@@ -101,6 +108,7 @@ class MainController {
 			 */
 			def contextFolderPath = "${deployContext.config.workFolder}/${dockerName}/"
 			Logger newLogger=Tool.configureLogger(contextFolderPath, dockerName)
+			geventBus.register(deployService)
 			
 			new Thread(){
 						@Override
@@ -112,6 +120,7 @@ class MainController {
 							}else{
 								engine = new DeployEngine(deployContext.config.dockerDaemon.host, deployContext.config.dockerDaemon.port)
 							}
+							engine.eventBus=geventBus
 							engine.logger=newLogger
 							engine.projectMetaManager=projectMetaManager
 							engine.historyManager=historyManager
@@ -124,6 +133,16 @@ class MainController {
 									)}
 					}.start()
 			LOGGER.info "event_name=chain_deploy_history() containerName={}", dockerName
+			
+			File historyFolder=new File(deployContext.config.workFolder+File.separator+dockerName)
+			assert historyFolder.exists()
+			def files=[]
+			historyFolder.eachFileRecurse { File it->
+				if(it.isFile()){
+					files.add(it)
+				}
+			}
+			render view:"deploy.gsp",model:[fileList:files, projectName:projectName, containerName:dockerName]
 //			chain action:"deploy_history", params: [pname:projectName, containerName: dockerName]
 //			chain action:"deploy_history", model: [history:
 //				new DeployHistory(
@@ -131,11 +150,11 @@ class MainController {
 //					),
 //				containerName:dockerName
 //				]
-			deploy_history new DeployHistory(
-						contextConfig:deployContext.config,
-						projectNames:[projectName]
-					),
-				dockerName
+//			deploy_history new DeployHistory(
+//						contextConfig:deployContext.config,
+//						projectNames:[projectName]
+//					),
+//				dockerName
 		}catch(Exception e){
 			LOGGER.error "event_name=deploy_exception key={} e={}",params, e
 			redirect uri:"/error"
@@ -159,8 +178,6 @@ class MainController {
 	}
 	
 	def deploy_history(history, containerName){
-//			def history=chainModel.history
-//			def containerName=chainModel.containerName
 			assert history.contextConfig.workFolder!=null
 			File historyFolder=new File(history.contextConfig.workFolder+File.separator+containerName)
 			def files=[]
@@ -174,4 +191,13 @@ class MainController {
 			}
 			render view:"history.gsp",model:[history:history, fileList:files]
 		}
+	
+	def isDeployEnded(){
+		def result=deployService.isDeployEnded(params.id)
+		def builder= new JsonBuilder()
+		builder.data{
+			isDeployEnded result
+		}
+		render builder.toString()
+	}
 }

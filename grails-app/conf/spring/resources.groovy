@@ -29,4 +29,5 @@ beans = {
 			"/resources/**":ref("resourceHttpRequestHandler")
 			] 
 	}
+	geventBus(com.google.common.eventbus.EventBus){}
 }
