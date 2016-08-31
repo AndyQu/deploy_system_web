@@ -1,4 +1,4 @@
-var QUERY_INTERVAL=10 //10 seconds
+var QUERY_INTERVAL=5000 //5 seconds
 function whetherDeployEnded(containerName, callback){
     var request=new XMLHttpRequest()
     request.onreadystatechange = function () {
@@ -7,7 +7,11 @@ function whetherDeployEnded(containerName, callback){
             if(result.data.isDeployEnded){
                 callback(containerName)
             }else{
-                setTimeout(whetherDeployEnded(containerName,callback), QUERY_INTERVAL*1000)
+                setTimeout(
+                    function(){
+                        whetherDeployEnded(containerName, callback)
+                    }, QUERY_INTERVAL
+                )
             }
         }
     }
