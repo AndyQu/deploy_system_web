@@ -12,6 +12,7 @@ import com.andyqu.docker.deploy.DeployEngine
 import com.andyqu.docker.deploy.GlobalContext
 import com.andyqu.docker.deploy.ProjectMetaManager
 import com.andyqu.docker.deploy.event.DeployEvent
+import com.andyqu.docker.deploy.event.DeployStage;
 import com.andyqu.docker.deploy.history.DeployHistory
 import com.andyqu.docker.deploy.history.HistoryManager;;
 import com.andyqu.docker.deploy.model.PortMeta
@@ -35,8 +36,6 @@ class MainController {
 	
 	def JsonSlurper jsonSlurper
 	
-	def EventBus geventBus
-	
 	def DeployService deployService
 	
     def index() {
@@ -50,12 +49,25 @@ class MainController {
 	def project(){
 		String projectName=params.id
 		Collection<ProjectMeta> pMetas=projectMetaManager.getProjectMetas([projectName])
-		List<DBObject> histories = historyManager.fetchHistories(projectName)
+		List<DeployHistory> histories = historyManager.fetchHistories(projectName)
 		render view:"project.gsp",model:[project:pMetas[0],histories:histories, portConfigPrefix:PortConfigPrefix]
 	}
 	
 	def deploy(){
 		LOGGER.info "event_name=deploy key={}", params
+		if(!deployService.canDeploy()){
+			def builder=new JsonBuilder()
+			def error = builder.error{
+				code 404
+				msg "并发部署到达上限。请稍后再试。"
+				domain {
+					max_concurrency deployService.getMaxConcurrent()
+				}
+			}
+			LOGGER.warn "event_name=read_max_deploy_concurrency key={}", params
+			render view:"/common_error.gsp",model:[error:error,projectName:params.projectName]
+			return
+		}
 		assert params.projectName == params.pname
 		
 		def ownerName=params.ownerName
@@ -106,34 +118,8 @@ class MainController {
 			/*
 			 * 开始部署
 			 */
-			def contextFolderPath = "${deployContext.config.workFolder}/${dockerName}/"
-			Logger newLogger=Tool.configureLogger(contextFolderPath, dockerName)
-			geventBus.register(deployService)
-			
-			new Thread(){
-						@Override
-						public void run(){
-							LOGGER.info "key={} event_name=useDockerSock:${deployContext.config.useDockerSock}", key
-							DeployEngine engine=null
-							if(deployContext.config.useDockerSock==1){
-								engine = new DeployEngine()
-							}else{
-								engine = new DeployEngine(deployContext.config.dockerDaemon.host, deployContext.config.dockerDaemon.port)
-							}
-							engine.eventBus=geventBus
-							engine.logger=newLogger
-							engine.projectMetaManager=projectMetaManager
-							engine.historyManager=historyManager
-							engine.deploy(
-									dockerName,
-									deployContext.config.ownerName,
-									deployContext.config.projects as List<ProjectMeta>,
-									deployContext.config.imgName,
-									deployContext.config
-									)}
-					}.start()
-			LOGGER.info "event_name=chain_deploy_history() containerName={}", dockerName
-			
+			LOGGER.info "key={} event_name=useDockerSock:${deployContext.config.useDockerSock}", key
+			deployService.deploy(deployContext,dockerName)
 			File historyFolder=new File(deployContext.config.workFolder+File.separator+dockerName)
 			assert historyFolder.exists()
 			def files=[]
@@ -143,18 +129,6 @@ class MainController {
 				}
 			}
 			render view:"deploy.gsp",model:[fileList:files, projectName:projectName, containerName:dockerName]
-//			chain action:"deploy_history", params: [pname:projectName, containerName: dockerName]
-//			chain action:"deploy_history", model: [history:
-//				new DeployHistory(
-//						contextConfig:deployContext.config
-//					),
-//				containerName:dockerName
-//				]
-//			deploy_history new DeployHistory(
-//						contextConfig:deployContext.config,
-//						projectNames:[projectName]
-//					),
-//				dockerName
 		}catch(Exception e){
 			LOGGER.error "event_name=deploy_exception key={} e={}",params, e
 			redirect uri:"/error"
@@ -165,14 +139,13 @@ class MainController {
 		LOGGER.info "event_name=show_deploy_history key={}", params
 		def projectName=params.pname
 		def containerName=params.containerName
-		List<DBObject> histories = historyManager.fetchHistories projectName, [containerName:containerName]
+		List<DeployHistory> histories = historyManager.fetchHistories projectName, [containerName:containerName]
 		if(histories.isEmpty()){
-			render view:"/error.gsp", [message:"历史记录不存在"]
+			render view:"/error.gsp", model: [message:"历史记录不存在"]
 		}else{ 
 			if(histories.size()>=2){
 				LOGGER.error "event_name=multiple_histories_found value={}", histories
 			}
-//			chain action:"deploy_history",model:[history:histories.get(0), containerName:containerName]
 			deploy_history histories.get(0),containerName
 		}
 	}
@@ -192,8 +165,19 @@ class MainController {
 			render view:"history.gsp",model:[history:history, fileList:files]
 		}
 	
+	def DeployStage fetchDeployStage(){
+		String containerName=params.id
+		DeployStage stage = fetchDeployStatus(containerName)
+		def builder= new JsonBuilder()
+		builder.data{
+			deployStage stage
+		}
+		render builder.toString()
+	}
+	
 	def isDeployEnded(){
-		def result=deployService.isDeployEnded(params.id)
+		String containerName=params.id
+		def result=deployService.isDeployEnded(containerName)
 		def builder= new JsonBuilder()
 		builder.data{
 			isDeployEnded result
