@@ -94,7 +94,7 @@ class DeployService {
 						engine.deploy(
 								dockerName,
 								deployContext.config.ownerName,
-								deployContext.config.projects as List<ProjectMeta>,
+								deployContext.config.project as ProjectMeta,
 								deployContext.config.imgName,
 								deployContext.config
 								)}

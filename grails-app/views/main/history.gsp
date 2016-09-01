@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta name="layout" content="main"/>
-		<title>部署系统-${history.projectNames[0]}</title>
+		<title>部署系统-${history.projectName}</title>
         <!--<script src="/assets/main/tmp.js"></script>-->
 	</head>
 	<body>
@@ -11,7 +11,7 @@
             <span>></span>
             <a href="/projects">项目列表</a>
             <span>></span>
-            <a href="/projects/${history.projectNames[0]}">${history.projectNames[0]}</a>
+            <a href="/projects/${history.projectName}">${history.projectName}</a>
 		</div>
 		<div>
 			<h1>日志文件列表</h1>
@@ -21,7 +21,7 @@
                 </g:if>
                 <g:else>
                     <g:each status="i" in="${fileList}" var="logFile">
-                        <li>
+                        <li style="margin-bottom:10px;">
                             <button 
                                 id="resources${logFile.getPath().replace(File.separator,"").replace(".","")}"
                                 data-url="/resources/${logFile.getPath()}"

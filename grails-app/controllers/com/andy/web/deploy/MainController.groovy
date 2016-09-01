@@ -74,7 +74,7 @@ class MainController {
 		def branchName=params.branchName
 		def projectName=params.projectName
 		try{
-			ProjectMeta pmeta = projectMetaManager.getProjectMetas([projectName]).getAt(0)
+			ProjectMeta pmeta = projectMetaManager.getProjectMeta(projectName)
 			pmeta.gitbranchName=branchName
 			pmeta.projectName=projectName
 			
@@ -108,7 +108,7 @@ class MainController {
 			String dockerName = Tool.generateContainerName(ownerName, [pmeta])
 			def projectsMeta=[
 				"ownerName": ownerName,
-				"projects" : [pmeta]
+				"project" : pmeta
 			]
 			LOGGER.debug "key={} event_name=generated_projectsMeta value={}", params, projectsMeta
 			deployContext.config = Tool.objsToJson(projectsMeta	, globalContext.hostConfig	)
