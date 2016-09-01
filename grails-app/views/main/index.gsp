@@ -8,14 +8,16 @@
 		<div>
 			<a href="#">主页</a><span>></span><a href="#">项目列表</a>
 		</div>
-		<div>
+		<div style="margin-left:50px;">
 			<ul>
 				<g:each in="${projectList}" var="project">
-        			<li>
-            			<a href="/projects/${project}">${project}</a>
-        			</li>
-        		</g:each>       
-			</ul>
-		</div>
+				<li style="margin-bottom:10px;">
+					<button class="btn btn-success">
+							<a href="/projects/${project}">${project}</a>
+					</button>
+				</li>
+				</g:each>
+			</ul>    
+		</div>   
 	</body>
 </html>

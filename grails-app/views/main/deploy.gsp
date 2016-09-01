@@ -34,9 +34,9 @@
                 </g:else>
 			</ol>
 		</div>
-        <div style="margin-top:20px;margin-bottom:20px;">
+        <!--<div style="margin-top:20px;margin-bottom:20px;">
             <button id="pauseButton" class="btn btn-danger" type="submit">暂停tail日志</buttona>.
-        </div>
+        </div>-->
         <div style="margin-top:20px;margin-bottom:20px;margin-left:50px;margin-right:100px;">
             <table class="table table-striped">
                 <tr>
@@ -59,6 +59,10 @@
                     <td><strong>Notice</strong></td>
                     <td id="notice"></td>
                 </tr>
+                <tr>
+                    <td><strong>部署状态</strong></td>
+                    <td id="deployStatus"></td>
+                </tr>
             </table>
         </div>
         <div style="margin-top:20px;margin-bottom:20px;margin-left:50px;margin-right:100px;">
@@ -66,7 +70,7 @@
         </div>
         <script type="text/javascript" src="/assets/main/deploy.js"></script>
         <script type="text/javascript">
-            window.onload = whetherDeployEnded("${containerName}", onDeployEnded)
+            window.onload = whetherDeployEnded("${projectName}", "${containerName}", onDeployEnded)
         </script>
     </body>
 </html>
