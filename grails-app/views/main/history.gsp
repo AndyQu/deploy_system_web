@@ -35,9 +35,9 @@
                 </g:else>
 			</ol>
 		</div>
-        <div style="margin-top:20px;margin-bottom:20px;">
+        <!--<div style="margin-top:20px;margin-bottom:20px;">
             <button id="pauseButton" class="btn btn-danger" type="submit">暂停tail日志</buttona>.
-        </div>
+        </div>-->
         <div style="margin-top:20px;margin-bottom:20px;margin-left:50px;margin-right:100px;">
             <table class="table table-striped">
                 <tr>

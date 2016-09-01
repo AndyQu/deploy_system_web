@@ -2,7 +2,6 @@
 /* Additional features: Priyesh Patel                     */
 
 var logContentArea = "#logFileContent";
-var pauseButton = "#pauseButton";
 
 var idFileTitle="#logFileTitle"
 var idLoadState="#loadState"
@@ -47,13 +46,7 @@ var isLoading = false;
 var tailTimer = null
 // var targetFileUrl = "/resources/tmp/docker-deploy/web.log";
 var targetFileUrl=null
-
 var kill = false;
-var pause = false;
-var reverse = false;
-var scrollelems = [ "html", "body" ];
-
-
 
 function tailYourLog(fileURL){
 	if(getURL()!=fileURL){
@@ -72,11 +65,13 @@ function setURL(fileUrl) {
 }
 function reStart() {
 	clearTimeout(tailTimer)
-	pause = false
 	logFileSize=0
 	logData=""
+	kill=false
+
 	showLog()
 	while(isLoading){}
+	
 	tailLog()
 }
 
@@ -208,28 +203,8 @@ function tailLog() {
 	});
 }
 
-function scroll(where) {
-	for (var i = 0; i < scrollelems.length; i++) {
-		var s = $(scrollelems[i]);
-		if (where === -1)
-			s.scrollTop(s.height());
-		else
-			s.scrollTop(where);
-	}
-}
-
 function showLog() {
-	if (pause) return;
-
 	var t = logData;
-
-	if (reverse) {
-		var t_a = t.split(/\n/g);
-		t_a.reverse();
-		if (t_a[0] == "")
-			t_a.shift();
-		t = t_a.join("\n");
-	}
 
 	if (FIX_RETURN)
 		t = t.replace(/\n/g, "\r\n");
@@ -238,8 +213,6 @@ function showLog() {
 	}
 
 	$(logContentArea).text(t);
-	if (!reverse)
-		scroll(-1);
 }
 
 function error(what) {
@@ -248,25 +221,9 @@ function error(what) {
 	$(logContentArea).text("An error occured :-(.\r\n" +
 		"Reloading may help; no promises.\r\n" +
 		what);
-	scroll(0);
-
 	return false;
 }
 
 $(document).ready(function() {
 	window.onerror = error;
-
-	/* If URL is /logtail/?noreverse display in chronological order */
-	//去掉开头的"?"问号
-	var hash = location.search.replace(/^\?/, "");
-	if (hash == "noreverse")
-		reverse = false;
-
-	/* Add pause toggle */
-	$(pauseButton).click(function(e) {
-		pause = !pause;
-		$(pauseButton).text(pause ? "开始tail日志" : "暂停tail日志");
-		showLog();
-		e.preventDefault();
-	});
 });
